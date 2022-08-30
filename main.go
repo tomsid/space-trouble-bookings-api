@@ -7,25 +7,16 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"space-trouble-bookings-api/bookings"
 	"syscall"
 	"time"
 
+	"github.com/go-chi/chi/v5"
 	"github.com/jackc/pgx/v4/pgxpool"
 )
 
 func main() {
 	l := log.New(os.Stdout, "", log.LUTC)
-
-	mux := http.NewServeMux()
-	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		if _, err := w.Write([]byte("test")); err != nil {
-			l.Fatal(err)
-		}
-	})
-	srv := http.Server{
-		Addr:    ":8080",
-		Handler: mux,
-	}
 
 	connURL := fmt.Sprintf("postgres://%s:%s@postgresdb:5432/%s",
 		os.Getenv("DB_USER"), os.Getenv("DB_PASSWORD"), os.Getenv("DB_NAME"))
@@ -37,13 +28,15 @@ func main() {
 
 	defer pgpool.Close()
 
-	var greeting string
-	err = pgpool.QueryRow(context.Background(), "select 'Hello, world!'").Scan(&greeting)
-	if err != nil {
-		l.Fatal(err)
-	}
+	api := bookings.NewAPI()
+	r := chi.NewRouter()
+	r.Get("/booking", api.Bookings)
+	r.Post("/booking", api.BookFlight)
 
-	fmt.Println(greeting)
+	srv := http.Server{
+		Addr:    ":8080",
+		Handler: r,
+	}
 
 	go func() {
 		l.Println("Listening on :8080")

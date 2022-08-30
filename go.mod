@@ -2,7 +2,10 @@ module space-trouble-bookings-api
 
 go 1.19
 
-require github.com/jackc/pgx/v4 v4.17.1
+require (
+	github.com/go-chi/chi/v5 v5.0.7
+	github.com/jackc/pgx/v4 v4.17.1
+)
 
 require (
 	github.com/jackc/chunkreader/v2 v2.0.1 // indirect
