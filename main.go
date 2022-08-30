@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"log"
 	"net/http"
 	"os"
 	"os/signal"
@@ -11,6 +10,8 @@ import (
 	"space-trouble-bookings-api/spacex"
 	"syscall"
 	"time"
+
+	"go.uber.org/zap"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/golang-migrate/migrate/v4"
@@ -20,7 +21,13 @@ import (
 )
 
 func main() {
-	l := log.New(os.Stdout, "", log.LUTC)
+	zapLog, err := zap.NewProduction()
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+	defer zapLog.Sync()
+	l := zapLog.Sugar()
 
 	connURL := fmt.Sprintf("postgres://%s:%s@postgresdb:5432/%s?sslmode=disable",
 		os.Getenv("DB_USER"), os.Getenv("DB_PASSWORD"), os.Getenv("DB_NAME"))
@@ -34,14 +41,18 @@ func main() {
 
 	m, err := migrate.New("file://db_migrations", connURL)
 	if err != nil {
-		log.Fatal(err)
+		l.Fatal(err)
 	}
 	if err := m.Up(); err != nil {
-		log.Fatal(err)
+		if err == migrate.ErrNoChange {
+			l.Info("DB version is the latest")
+		} else {
+			l.Fatal(err)
+		}
 	}
 
 	spacexClient := spacex.NewClient(&http.Client{Timeout: 15 * time.Second})
-	handlers := api.NewAPI(spacexClient)
+	handlers := api.NewAPI(spacexClient, l)
 	r := chi.NewRouter()
 	r.Get("/booking", handlers.Bookings)
 	r.Post("/booking", handlers.BookFlight)
@@ -52,7 +63,7 @@ func main() {
 	}
 
 	go func() {
-		l.Println("Listening on :8080")
+		l.Info("Listening on :8080")
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			l.Fatal("shutting down the server")
 		}
@@ -61,11 +72,11 @@ func main() {
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, os.Interrupt, syscall.SIGTERM)
 	<-quit
-	l.Println("shutting down the server, waiting for in-flight connections to finish")
+	l.Info("shutting down the server, waiting for in-flight connections to finish")
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	if err := srv.Shutdown(ctx); err != nil {
 		l.Fatal(err)
 	}
-	l.Println("server shut down")
+	l.Info("server shut down")
 }

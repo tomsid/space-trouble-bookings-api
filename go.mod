@@ -6,6 +6,7 @@ require (
 	github.com/go-chi/chi/v5 v5.0.7
 	github.com/golang-migrate/migrate/v4 v4.15.2
 	github.com/jackc/pgx/v4 v4.17.1
+	go.uber.org/zap v1.17.0
 )
 
 require (
@@ -21,6 +22,7 @@ require (
 	github.com/jackc/puddle v1.3.0 // indirect
 	github.com/lib/pq v1.10.2 // indirect
 	go.uber.org/atomic v1.7.0 // indirect
+	go.uber.org/multierr v1.6.0 // indirect
 	golang.org/x/crypto v0.0.0-20220829220503-c86fa9a7ed90 // indirect
 	golang.org/x/text v0.3.7 // indirect
 )

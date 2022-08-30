@@ -22,7 +22,7 @@ type Launchpad struct {
 	Launches        []string `json:"launches"`
 	Status          string   `json:"status"`
 	Details         string   `json:"details"`
-	Id              string   `json:"id"`
+	ID              string   `json:"id"`
 }
 
 func (c *client) GetAllLaunchpads() ([]Launchpad, error) {
