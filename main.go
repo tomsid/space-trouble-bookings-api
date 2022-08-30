@@ -13,13 +13,16 @@ import (
 	"time"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/golang-migrate/migrate/v4"
+	_ "github.com/golang-migrate/migrate/v4/database/postgres"
+	_ "github.com/golang-migrate/migrate/v4/source/file"
 	"github.com/jackc/pgx/v4/pgxpool"
 )
 
 func main() {
 	l := log.New(os.Stdout, "", log.LUTC)
 
-	connURL := fmt.Sprintf("postgres://%s:%s@postgresdb:5432/%s",
+	connURL := fmt.Sprintf("postgres://%s:%s@postgresdb:5432/%s?sslmode=disable",
 		os.Getenv("DB_USER"), os.Getenv("DB_PASSWORD"), os.Getenv("DB_NAME"))
 
 	pgpool, err := pgxpool.Connect(context.TODO(), connURL)
@@ -29,11 +32,19 @@ func main() {
 
 	defer pgpool.Close()
 
+	m, err := migrate.New("file://db_migrations", connURL)
+	if err != nil {
+		log.Fatal(err)
+	}
+	if err := m.Up(); err != nil {
+		log.Fatal(err)
+	}
+
 	spacexClient := spacex.NewClient(&http.Client{Timeout: 15 * time.Second})
-	api := api.NewAPI(spacexClient)
+	handlers := api.NewAPI(spacexClient)
 	r := chi.NewRouter()
-	r.Get("/booking", api.Bookings)
-	r.Post("/booking", api.BookFlight)
+	r.Get("/booking", handlers.Bookings)
+	r.Post("/booking", handlers.BookFlight)
 
 	srv := http.Server{
 		Addr:    ":8080",

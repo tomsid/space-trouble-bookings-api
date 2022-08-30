@@ -16,6 +16,7 @@ FROM debian:bullseye-slim
 LABEL maintainer="Tomash Sidei <tomash.sidey@gmail.com>"
 
 COPY --from=build /app/bin/api /app/api
+COPY db_migrations /db_migrations
 
 RUN addgroup --gid 901 spacetrouble && adduser --uid 901 --gid 901 spacetrouble
 
