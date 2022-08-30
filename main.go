@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/signal"
 	"space-trouble-bookings-api/bookings"
+	"space-trouble-bookings-api/spacex"
 	"syscall"
 	"time"
 
@@ -28,7 +29,8 @@ func main() {
 
 	defer pgpool.Close()
 
-	api := bookings.NewAPI()
+	spacexClient := spacex.NewClient(&http.Client{Timeout: 15 * time.Second})
+	api := bookings.NewAPI(spacexClient)
 	r := chi.NewRouter()
 	r.Get("/booking", api.Bookings)
 	r.Post("/booking", api.BookFlight)
