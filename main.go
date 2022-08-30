@@ -2,12 +2,15 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
+
+	"github.com/jackc/pgx/v4/pgxpool"
 )
 
 func main() {
@@ -23,6 +26,24 @@ func main() {
 		Addr:    ":8080",
 		Handler: mux,
 	}
+
+	connURL := fmt.Sprintf("postgres://%s:%s@postgresdb:5432/%s",
+		os.Getenv("DB_USER"), os.Getenv("DB_PASSWORD"), os.Getenv("DB_NAME"))
+
+	pgpool, err := pgxpool.Connect(context.TODO(), connURL)
+	if err != nil {
+		l.Fatal(err)
+	}
+
+	defer pgpool.Close()
+
+	var greeting string
+	err = pgpool.QueryRow(context.Background(), "select 'Hello, world!'").Scan(&greeting)
+	if err != nil {
+		l.Fatal(err)
+	}
+
+	fmt.Println(greeting)
 
 	go func() {
 		l.Println("Listening on :8080")
