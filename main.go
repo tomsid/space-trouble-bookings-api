@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/signal"
 	"space-trouble-bookings-api/api"
+	"space-trouble-bookings-api/config"
 	"space-trouble-bookings-api/db"
 	"space-trouble-bookings-api/spacex"
 	"syscall"
@@ -14,6 +15,7 @@ import (
 
 	"go.uber.org/zap"
 
+	"github.com/caarlos0/env/v6"
 	"github.com/go-chi/chi/v5"
 	"github.com/golang-migrate/migrate/v4"
 	_ "github.com/golang-migrate/migrate/v4/database/postgres"
@@ -30,8 +32,13 @@ func main() {
 	defer zapLog.Sync()
 	l := zapLog.Sugar()
 
+	cfg := config.Config{}
+	if err = env.Parse(&cfg); err != nil {
+		l.Fatal(err)
+	}
+
 	connURL := fmt.Sprintf("postgres://%s:%s@postgresdb:5432/%s?sslmode=disable",
-		os.Getenv("DB_USER"), os.Getenv("DB_PASSWORD"), os.Getenv("DB_NAME"))
+		cfg.DBUser, cfg.DBPassword, cfg.DBName)
 
 	pgpool, err := pgxpool.Connect(context.TODO(), connURL)
 	if err != nil {

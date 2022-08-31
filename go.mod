@@ -3,6 +3,7 @@ module space-trouble-bookings-api
 go 1.19
 
 require (
+	github.com/caarlos0/env/v6 v6.10.0
 	github.com/go-chi/chi/v5 v5.0.7
 	github.com/golang-migrate/migrate/v4 v4.15.2
 	github.com/jackc/pgx/v4 v4.17.1
