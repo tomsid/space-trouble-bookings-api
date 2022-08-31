@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -10,7 +11,9 @@ import (
 	"time"
 )
 
-type Booking struct {
+const dateFormat = "2006-01-02"
+
+type BookingRequest struct {
 	FirstName     string `json:"firstName"`
 	LastName      string `json:"lastName"`
 	Gender        string `json:"gender"`
@@ -21,6 +24,7 @@ type Booking struct {
 }
 
 func (a *API) BookFlight(w http.ResponseWriter, r *http.Request) {
+	ctx := context.Background()
 	b, err := io.ReadAll(r.Body)
 	if err != nil {
 		a.log.Error(err)
@@ -28,7 +32,7 @@ func (a *API) BookFlight(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 	}
 
-	flightBooking := &Booking{}
+	flightBooking := &BookingRequest{}
 	err = json.Unmarshal(b, flightBooking)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
@@ -39,20 +43,40 @@ func (a *API) BookFlight(w http.ResponseWriter, r *http.Request) {
 	launchDate, err := time.Parse("2006-01-02", flightBooking.LaunchDate)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
-		a.writeJSONResponse(w, ErrorResponse{Message: fmt.Sprintf("Invalid launch date. Shoulld be in formate YYYY-MM-DD: %s", err.Error())})
+		a.writeJSONResponse(w, ErrorResponse{Message: fmt.Sprintf("Invalid launch date. Shoulld be in format YYYY-MM-DD: %s", err.Error())})
 		return
 	}
 
-	// todo validation
+	birthday, err := time.Parse("2006-01-02", flightBooking.Birthday)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		a.writeJSONResponse(w, ErrorResponse{Message: fmt.Sprintf("Invalid birthday date. Shoulld be in format YYYY-MM-DD: %s", err.Error())})
+		return
+	}
 
-	destinations := []db.Destinations{
-		{ID: 1, Name: "Moon"},
-		{ID: 2, Name: "sdf"},
-		{ID: 3, Name: "dfg"},
-		{ID: 4, Name: "ddf"},
-		{ID: 5, Name: "we"},
-		{ID: 6, Name: "dwe"},
-		{ID: 7, Name: "sdfs"},
+	if flightBooking.Gender != "male" && flightBooking.Gender != "female" {
+		w.WriteHeader(http.StatusBadRequest)
+		a.writeJSONResponse(w, ErrorResponse{Message: fmt.Sprintf("Gender should be male or female")})
+		return
+	}
+
+	if len(flightBooking.FirstName) == 0 {
+		w.WriteHeader(http.StatusBadRequest)
+		a.writeJSONResponse(w, ErrorResponse{Message: fmt.Sprintf("field first_name can't be empty")})
+		return
+	}
+
+	if len(flightBooking.LastName) == 0 {
+		w.WriteHeader(http.StatusBadRequest)
+		a.writeJSONResponse(w, ErrorResponse{Message: fmt.Sprintf("field last_name can't be empty")})
+		return
+	}
+
+	destinations, err := a.db.Destinations(ctx)
+	if err != nil {
+		a.log.Error(err)
+		a.internalServerError(w)
+		return
 	}
 
 	destinationsMap := make(map[int]string, len(destinations))
@@ -66,13 +90,23 @@ func (a *API) BookFlight(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	//TODO check if spacex have the requested launchpad booked
-	//launches, err := a.spacex.GetUpcomingLaunches()
-	//if err != nil {
-	//	a.log.Error([]byte(err.Error()))
-	//	a.internalServerError(w)
-	//	return
-	//}
+	upcomingLaunches, err := a.spacex.GetUpcomingLaunches()
+	if err != nil {
+		a.log.Error([]byte(err.Error()))
+		a.internalServerError(w)
+		return
+	}
+	for _, upcomingLaunch := range upcomingLaunches {
+		t, err := time.Parse(time.RFC3339, upcomingLaunch.DateUTC)
+		if err != nil {
+			a.log.Errorf("failed to pares upcoming launch time: %s", err.Error())
+		}
+		if t.Day() == launchDate.Day() && t.Month() == launchDate.Month() && t.Year() == launchDate.Year() {
+			w.WriteHeader(http.StatusBadRequest)
+			a.writeJSONResponse(w, ErrorResponse{Message: "SpaceX uses the launchpad on that dayÏ"})
+			return
+		}
+	}
 
 	//TODO check if requested day on requested pad a flight with different destination is booked.
 	// can happen if the input changed (added/removed lauchpad or destination. Don't book in that case.
@@ -100,7 +134,7 @@ func (a *API) BookFlight(w http.ResponseWriter, r *http.Request) {
 	}
 	sort.Strings(launchPadIDs)
 
-	bookingDay := launchDate.Day()
+	bookingDay := launchDate.YearDay()
 	pad1Destination := bookingDay%len(destinations) + 1
 	fmt.Println(pad1Destination)
 
@@ -125,5 +159,21 @@ func (a *API) BookFlight(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	//TODO save the booking
+	err = a.db.CreateBooking(ctx, db.Booking{
+		FirstName:     flightBooking.FirstName,
+		LastName:      flightBooking.LastName,
+		DestinationID: flightBooking.DestinationID,
+		LaunchpadID:   flightBooking.LaunchpadID,
+		Gender:        flightBooking.Gender,
+		LaunchDate:    launchDate,
+		Birthday:      birthday,
+	})
+
+	if err != nil {
+		a.log.Error(err)
+		a.internalServerError(w)
+		return
+	}
+
+	w.WriteHeader(http.StatusCreated)
 }

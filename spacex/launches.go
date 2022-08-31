@@ -5,21 +5,20 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"time"
 )
 
 type Launch struct {
-	Rocket          string    `json:"rocket"`
-	Launchpad       string    `json:"launchpad"`
-	FlightNumber    int       `json:"flight_number"`
-	Name            string    `json:"name"`
-	DateUTC         time.Time `json:"date_utc"`
-	DateUnix        int       `json:"date_unix"`
-	DateLocal       time.Time `json:"date_local"`
-	DatePrecision   string    `json:"date_precision"`
-	Upcoming        bool      `json:"upcoming"`
-	LaunchLibraryID string    `json:"launch_library_id"`
-	Id              string    `json:"id"`
+	Rocket          string `json:"rocket"`
+	Launchpad       string `json:"launchpad"`
+	FlightNumber    int    `json:"flight_number"`
+	Name            string `json:"name"`
+	DateUTC         string `json:"date_utc"`
+	DateUnix        int    `json:"date_unix"`
+	DateLocal       string `json:"date_local"`
+	DatePrecision   string `json:"date_precision"`
+	Upcoming        bool   `json:"upcoming"`
+	LaunchLibraryID string `json:"launch_library_id"`
+	ID              string `json:"id"`
 }
 
 func (c *client) GetUpcomingLaunches() ([]Launch, error) {

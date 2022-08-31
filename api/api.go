@@ -2,8 +2,8 @@ package api
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
+	"space-trouble-bookings-api/db"
 	"space-trouble-bookings-api/spacex"
 
 	"go.uber.org/zap"
@@ -11,13 +11,15 @@ import (
 
 type API struct {
 	spacex spacex.Client
-	log    *zap.SugaredLogger ``
+	log    *zap.SugaredLogger
+	db     db.Storage
 }
 
-func NewAPI(spacexClient spacex.Client, l *zap.SugaredLogger) *API {
+func NewAPI(spacexClient spacex.Client, storage db.Storage, l *zap.SugaredLogger) *API {
 	return &API{
 		spacex: spacexClient,
 		log:    l,
+		db:     storage,
 	}
 }
 
@@ -46,13 +48,4 @@ func (a *API) writeResponse(w http.ResponseWriter, resp []byte) {
 	if err != nil {
 		a.log.Error(err)
 	}
-}
-
-func (a *API) Bookings(w http.ResponseWriter, r *http.Request) {
-	launchpads, err := a.spacex.GetAllLaunchpads()
-	if err != nil {
-		w.Write([]byte(err.Error()))
-		return
-	}
-	w.Write([]byte(fmt.Sprintf("%#v", launchpads)))
 }

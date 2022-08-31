@@ -4,7 +4,7 @@ CREATE TABLE IF NOT EXISTS bookings (
     last_name VARCHAR (50) NOT NULL,
     gender VARCHAR (10) NOT NULL,
     birthday date NOT NULL,
-    launchpadID int NOT NULL,
-    destinationID int NOT NULL,
-    launchDate date NOT NULL
+    launchpad_id varchar (30) NOT NULL,
+    destination_id int NOT NULL,
+    launch_date date NOT NULL
 );

@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/signal"
 	"space-trouble-bookings-api/api"
+	"space-trouble-bookings-api/db"
 	"space-trouble-bookings-api/spacex"
 	"syscall"
 	"time"
@@ -36,7 +37,6 @@ func main() {
 	if err != nil {
 		l.Fatal(err)
 	}
-
 	defer pgpool.Close()
 
 	m, err := migrate.New("file://db_migrations", connURL)
@@ -52,7 +52,7 @@ func main() {
 	}
 
 	spacexClient := spacex.NewClient(&http.Client{Timeout: 15 * time.Second})
-	handlers := api.NewAPI(spacexClient, l)
+	handlers := api.NewAPI(spacexClient, db.NewPGStorage(pgpool), l)
 	r := chi.NewRouter()
 	r.Get("/booking", handlers.Bookings)
 	r.Post("/booking", handlers.BookFlight)
