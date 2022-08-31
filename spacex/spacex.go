@@ -1,6 +1,7 @@
 package spacex
 
 import (
+	"context"
 	"net/http"
 	"time"
 )
@@ -10,8 +11,8 @@ const (
 )
 
 type Client interface {
-	GetAllLaunchpads() ([]Launchpad, error)
-	GetUpcomingLaunches() ([]Launch, error)
+	GetAllLaunchpads(ctx context.Context) ([]Launchpad, error)
+	GetUpcomingLaunches(ctx context.Context) ([]Launch, error)
 }
 
 type Images struct {

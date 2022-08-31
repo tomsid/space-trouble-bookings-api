@@ -28,6 +28,7 @@ func TestAPI_BookFlight(t *testing.T) {
 		body             string
 		launchPads       []spacex.Launchpad
 		upcomingLaunches []spacex.Launch
+		existingBookings []db.Booking
 		expectedStatus   int
 		expectedBody     string
 	}{
@@ -53,7 +54,7 @@ func TestAPI_BookFlight(t *testing.T) {
 			name:           "destination not found",
 			body:           `{"launch_date": "2022-10-03", "birthday": "1993-04-18", "first_name": "fname", "last_name": "lname", "gender": "male", "destination_id": 9, "launchpad_id": "jwojeoijwfj"}`,
 			expectedStatus: http.StatusBadRequest,
-			expectedBody:   `{"message":"Destination with ID 9 not found"}`,
+			expectedBody:   `{"message":"Flight can't be booked: Destination with ID 9 not found"}`,
 		},
 		{
 			name: "lauchpad is busy",
@@ -66,7 +67,7 @@ func TestAPI_BookFlight(t *testing.T) {
 				},
 			},
 			expectedStatus: http.StatusBadRequest,
-			expectedBody:   `{"message":"SpaceX uses the launchpad on that day"}`,
+			expectedBody:   `{"message":"Flight can't be booked: SpaceX uses the launchpad on that day"}`,
 		},
 		{
 			name: "successfully book a ticket",
@@ -102,7 +103,7 @@ func TestAPI_BookFlight(t *testing.T) {
 				},
 			},
 			expectedStatus: http.StatusBadRequest,
-			expectedBody:   `{"message":"No launches available for destination 3(Pluto) on launchpad jwojeoijwfj on 2022-10-03"}`,
+			expectedBody:   `{"message":"Flight can't be booked: No launches available for destination 3(Pluto) on launchpad jwojeoijwfj on 2022-10-03"}`,
 		},
 		{
 			name: "launchpad not found",
@@ -120,7 +121,37 @@ func TestAPI_BookFlight(t *testing.T) {
 				},
 			},
 			expectedStatus: http.StatusBadRequest,
-			expectedBody:   `{"message":"Requested launchpad with ID \"nonexisting\" not found"}`,
+			expectedBody:   `{"message":"Flight can't be booked: Requested launchpad with ID \"nonexisting\" not found"}`,
+		},
+		{
+			name: "schedule even if not according to schedule, but the destination is already scheduled before",
+			body: `{"launch_date": "2022-10-03", "birthday": "1993-04-18", "first_name": "fname", "last_name": "lname", "gender": "male", "destination_id": 3, "launchpad_id": "jwojeoijwfj"}`,
+			upcomingLaunches: []spacex.Launch{
+				{
+					Launchpad: "jwojeoijwfj",
+					Name:      "",
+					DateUTC:   "2022-10-25T05:40:00.000Z",
+				},
+			},
+			launchPads: []spacex.Launchpad{
+				{
+					ID: "jwojeoijwfj",
+				},
+			},
+			existingBookings: []db.Booking{
+				{
+					ID:            1,
+					FirstName:     "terst",
+					LastName:      "test_l",
+					Gender:        "male",
+					Birthday:      time.Now(),
+					LaunchpadID:   "jwojeoijwfj",
+					DestinationID: 3,
+					LaunchDate:    time.Date(2022, 10, 3, 15, 34, 0, 0, time.UTC),
+				},
+			},
+			expectedStatus: http.StatusCreated,
+			expectedBody:   ``,
 		},
 	}
 
@@ -132,6 +163,7 @@ func TestAPI_BookFlight(t *testing.T) {
 			log:    zap.NewNop().Sugar(),
 			db: &dbMock{
 				destinations: destinations,
+				bookings:     tc.existingBookings,
 			},
 		}
 
@@ -153,11 +185,11 @@ type spacexMock struct {
 	upcomingLaunches []spacex.Launch
 }
 
-func (s *spacexMock) GetUpcomingLaunches() ([]spacex.Launch, error) {
+func (s *spacexMock) GetUpcomingLaunches(ctx context.Context) ([]spacex.Launch, error) {
 	return s.upcomingLaunches, nil
 }
 
-func (s *spacexMock) GetAllLaunchpads() ([]spacex.Launchpad, error) {
+func (s *spacexMock) GetAllLaunchpads(ctx context.Context) ([]spacex.Launchpad, error) {
 	return s.launchpads, nil
 }
 

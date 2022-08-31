@@ -1,6 +1,7 @@
 package spacex
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -21,8 +22,8 @@ type Launch struct {
 	ID              string `json:"id"`
 }
 
-func (c *client) GetUpcomingLaunches() ([]Launch, error) {
-	req, err := http.NewRequest(http.MethodGet, APIBaseURL+"v5/launches/upcoming", nil)
+func (c *client) GetUpcomingLaunches(ctx context.Context) ([]Launch, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, APIBaseURL+"v5/launches/upcoming", nil)
 	if err != nil {
 		return nil, err
 	}

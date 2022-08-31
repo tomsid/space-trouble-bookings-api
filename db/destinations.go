@@ -2,17 +2,7 @@ package db
 
 import (
 	"context"
-
-	"github.com/jackc/pgx/v4/pgxpool"
 )
-
-type pgstorage struct {
-	pg *pgxpool.Pool
-}
-
-func NewPGStorage(pool *pgxpool.Pool) Storage {
-	return &pgstorage{pg: pool}
-}
 
 func (s *pgstorage) Destinations(ctx context.Context) ([]Destination, error) {
 	rows, err := s.pg.Query(ctx, "SELECT id,name FROM destinations")

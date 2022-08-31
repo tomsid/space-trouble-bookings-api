@@ -3,6 +3,8 @@ package db
 import (
 	"context"
 	"time"
+
+	"github.com/jackc/pgx/v4/pgxpool"
 )
 
 type Storage interface {
@@ -11,6 +13,14 @@ type Storage interface {
 	Destinations(ctx context.Context) ([]Destination, error)
 	BookingExists(ctx context.Context, id int) (bool, error)
 	BookingDelete(ctx context.Context, id int) error
+}
+
+type pgstorage struct {
+	pg *pgxpool.Pool
+}
+
+func NewPGStorage(pool *pgxpool.Pool) Storage {
+	return &pgstorage{pg: pool}
 }
 
 type Booking struct {

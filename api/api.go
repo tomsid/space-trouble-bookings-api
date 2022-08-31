@@ -2,6 +2,7 @@ package api
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"space-trouble-bookings-api/db"
 	"space-trouble-bookings-api/spacex"
@@ -25,6 +26,14 @@ func NewAPI(spacexClient spacex.Client, storage db.Storage, l *zap.SugaredLogger
 
 type ErrorResponse struct {
 	Message string `json:"message"`
+}
+
+type ScheduleError struct {
+	Reason string
+}
+
+func (e ScheduleError) Error() string {
+	return fmt.Sprintf("Flight can't be booked: %s", e.Reason)
 }
 
 func (a *API) internalServerError(w http.ResponseWriter) {

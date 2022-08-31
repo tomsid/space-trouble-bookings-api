@@ -1,6 +1,7 @@
 package spacex
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -25,8 +26,8 @@ type Launchpad struct {
 	ID              string   `json:"id"`
 }
 
-func (c *client) GetAllLaunchpads() ([]Launchpad, error) {
-	req, err := http.NewRequest(http.MethodGet, APIBaseURL+"v4/launchpads", nil)
+func (c *client) GetAllLaunchpads(ctx context.Context) ([]Launchpad, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, APIBaseURL+"v4/launchpads", nil)
 	if err != nil {
 		return nil, err
 	}
