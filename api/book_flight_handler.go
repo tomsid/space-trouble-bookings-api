@@ -14,13 +14,13 @@ import (
 const dateFormat = "2006-01-02"
 
 type BookingRequest struct {
-	FirstName     string `json:"firstName"`
-	LastName      string `json:"lastName"`
+	FirstName     string `json:"first_name"`
+	LastName      string `json:"last_name"`
 	Gender        string `json:"gender"`
 	Birthday      string `json:"birthday"`
-	LaunchpadID   string `json:"launchpadID"`
-	DestinationID int    `json:"destinationID"`
-	LaunchDate    string `json:"launchDate"`
+	LaunchpadID   string `json:"launchpad_id"`
+	DestinationID int    `json:"destination_id"`
+	LaunchDate    string `json:"launch_date"`
 }
 
 func (a *API) BookFlight(w http.ResponseWriter, r *http.Request) {

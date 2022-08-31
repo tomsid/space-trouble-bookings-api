@@ -6,7 +6,7 @@ import (
 )
 
 type Storage interface {
-	Bookings(ctx context.Context) ([]Booking, error)
+	Bookings(ctx context.Context, filter BookingsFilter) ([]Booking, error)
 	CreateBooking(ctx context.Context, booking Booking) error
 	Destinations(ctx context.Context) ([]Destination, error)
 }
@@ -20,6 +20,12 @@ type Booking struct {
 	LaunchpadID   string
 	DestinationID int
 	LaunchDate    time.Time
+}
+
+type BookingsFilter struct {
+	LaunchDate time.Time
+	Offset     int
+	Limit      int
 }
 
 type Destination struct {
