@@ -29,7 +29,12 @@ func main() {
 		fmt.Println(err)
 		os.Exit(1)
 	}
-	defer zapLog.Sync()
+	defer func() {
+		err := zapLog.Sync()
+		if err != nil {
+			fmt.Println(err)
+		}
+	}()
 	l := zapLog.Sugar()
 
 	cfg := config.Config{}

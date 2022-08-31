@@ -52,17 +52,17 @@ func (a *API) BookFlight(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if flightBooking.Gender != "male" && flightBooking.Gender != "female" {
-		a.writeBadRequest(w, ErrorResponse{Message: fmt.Sprintf("Gender should be male or female")})
+		a.writeBadRequest(w, ErrorResponse{Message: "Gender should be male or female"})
 		return
 	}
 
 	if len(flightBooking.FirstName) == 0 {
-		a.writeBadRequest(w, ErrorResponse{Message: fmt.Sprintf("field first_name can't be empty")})
+		a.writeBadRequest(w, ErrorResponse{Message: "field first_name can't be empty"})
 		return
 	}
 
 	if len(flightBooking.LastName) == 0 {
-		a.writeBadRequest(w, ErrorResponse{Message: fmt.Sprintf("field last_name can't be empty")})
+		a.writeBadRequest(w, ErrorResponse{Message: "field last_name can't be empty"})
 		return
 	}
 
