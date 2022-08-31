@@ -14,8 +14,7 @@ func (a *API) BookingDelete(w http.ResponseWriter, r *http.Request) {
 
 	id, err := strconv.Atoi(idStr)
 	if err != nil || id < 1 {
-		w.WriteHeader(http.StatusBadRequest)
-		a.writeJSONResponse(w, ErrorResponse{Message: "booking id should be an integer and >0"})
+		a.writeBadRequest(w, ErrorResponse{Message: "booking id should be an integer and >0"})
 		return
 	}
 
@@ -26,8 +25,7 @@ func (a *API) BookingDelete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if !exists {
-		w.WriteHeader(http.StatusBadRequest)
-		a.writeJSONResponse(w, ErrorResponse{Message: "booking doesn't exist"})
+		a.writeBadRequest(w, ErrorResponse{Message: "booking doesn't exist"})
 		return
 	}
 

@@ -31,8 +31,7 @@ func (a *API) Bookings(w http.ResponseWriter, r *http.Request) {
 	if q.Has("launch_date") {
 		launchDay, err := time.Parse(dateFormat, q.Get("launch_date"))
 		if err != nil {
-			w.WriteHeader(http.StatusBadRequest)
-			a.writeJSONResponse(w, ErrorResponse{Message: "launch_date should be in format YYYY-MM-DD"})
+			a.writeBadRequest(w, ErrorResponse{Message: "launch_date should be in format YYYY-MM-DD"})
 			return
 		}
 		bookingsFilter.LaunchDate = launchDay
@@ -41,8 +40,7 @@ func (a *API) Bookings(w http.ResponseWriter, r *http.Request) {
 	if q.Has("offset") {
 		offset, err := strconv.Atoi(q.Get("offset"))
 		if err != nil || offset < 0 {
-			w.WriteHeader(http.StatusBadRequest)
-			a.writeJSONResponse(w, ErrorResponse{Message: "offset should be an integer and be >=0"})
+			a.writeBadRequest(w, ErrorResponse{Message: "offset should be an integer and be >=0"})
 			return
 		}
 		bookingsFilter.Offset = offset
@@ -51,8 +49,7 @@ func (a *API) Bookings(w http.ResponseWriter, r *http.Request) {
 	if q.Has("limit") {
 		limit, err := strconv.Atoi(q.Get("limit"))
 		if err != nil || limit < 1 || limit > 300 {
-			w.WriteHeader(http.StatusBadRequest)
-			a.writeJSONResponse(w, ErrorResponse{Message: "limit should be an integer and be > 0 and <= 300"})
+			a.writeBadRequest(w, ErrorResponse{Message: "limit should be an integer and be > 0 and <= 300"})
 			return
 		}
 		bookingsFilter.Limit = limit

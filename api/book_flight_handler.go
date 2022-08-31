@@ -35,40 +35,34 @@ func (a *API) BookFlight(w http.ResponseWriter, r *http.Request) {
 	flightBooking := &BookingRequest{}
 	err = json.Unmarshal(b, flightBooking)
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		a.writeJSONResponse(w, ErrorResponse{Message: err.Error()})
+		a.writeBadRequest(w, ErrorResponse{Message: err.Error()})
 		return
 	}
 
 	launchDate, err := time.Parse("2006-01-02", flightBooking.LaunchDate)
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		a.writeJSONResponse(w, ErrorResponse{Message: fmt.Sprintf("Invalid launch date. Shoulld be in format YYYY-MM-DD: %s", err.Error())})
+		a.writeBadRequest(w, ErrorResponse{Message: fmt.Sprintf("Invalid launch date. Should be in format YYYY-MM-DD: %s", err.Error())})
 		return
 	}
 
 	birthday, err := time.Parse("2006-01-02", flightBooking.Birthday)
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		a.writeJSONResponse(w, ErrorResponse{Message: fmt.Sprintf("Invalid birthday date. Shoulld be in format YYYY-MM-DD: %s", err.Error())})
+		a.writeBadRequest(w, ErrorResponse{Message: fmt.Sprintf("Invalid birthday date. Should be in format YYYY-MM-DD: %s", err.Error())})
 		return
 	}
 
 	if flightBooking.Gender != "male" && flightBooking.Gender != "female" {
-		w.WriteHeader(http.StatusBadRequest)
-		a.writeJSONResponse(w, ErrorResponse{Message: fmt.Sprintf("Gender should be male or female")})
+		a.writeBadRequest(w, ErrorResponse{Message: fmt.Sprintf("Gender should be male or female")})
 		return
 	}
 
 	if len(flightBooking.FirstName) == 0 {
-		w.WriteHeader(http.StatusBadRequest)
-		a.writeJSONResponse(w, ErrorResponse{Message: fmt.Sprintf("field first_name can't be empty")})
+		a.writeBadRequest(w, ErrorResponse{Message: fmt.Sprintf("field first_name can't be empty")})
 		return
 	}
 
 	if len(flightBooking.LastName) == 0 {
-		w.WriteHeader(http.StatusBadRequest)
-		a.writeJSONResponse(w, ErrorResponse{Message: fmt.Sprintf("field last_name can't be empty")})
+		a.writeBadRequest(w, ErrorResponse{Message: fmt.Sprintf("field last_name can't be empty")})
 		return
 	}
 
@@ -85,8 +79,7 @@ func (a *API) BookFlight(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if _, found := destinationsMap[flightBooking.DestinationID]; !found {
-		w.WriteHeader(http.StatusBadRequest)
-		a.writeJSONResponse(w, ErrorResponse{Message: fmt.Sprintf("Destination with ID %d not found", flightBooking.DestinationID)})
+		a.writeBadRequest(w, ErrorResponse{Message: fmt.Sprintf("Destination with ID %d not found", flightBooking.DestinationID)})
 		return
 	}
 
@@ -99,11 +92,10 @@ func (a *API) BookFlight(w http.ResponseWriter, r *http.Request) {
 	for _, upcomingLaunch := range upcomingLaunches {
 		t, err := time.Parse(time.RFC3339, upcomingLaunch.DateUTC)
 		if err != nil {
-			a.log.Errorf("failed to pares upcoming launch time: %s", err.Error())
+			a.log.Errorf("failed to parse upcoming launch time: %s", err.Error())
 		}
 		if sameDay(t, launchDate) {
-			w.WriteHeader(http.StatusBadRequest)
-			a.writeJSONResponse(w, ErrorResponse{Message: "SpaceX uses the launchpad on that day"})
+			a.writeBadRequest(w, ErrorResponse{Message: "SpaceX uses the launchpad on that day"})
 			return
 		}
 	}
@@ -115,7 +107,7 @@ func (a *API) BookFlight(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if len(launchDateBookings) > 0 && launchDateBookings[0].DestinationID != flightBooking.DestinationID && launchDateBookings[0].LaunchpadID != flightBooking.LaunchpadID {
-		a.writeJSONResponse(w, ErrorResponse{Message: fmt.Sprintf("On that day bookings only for destination %d are allowed", launchDateBookings[0].DestinationID)})
+		a.writeBadRequest(w, ErrorResponse{Message: fmt.Sprintf("On that day bookings only for destination %d are allowed", launchDateBookings[0].DestinationID)})
 		return
 	}
 
@@ -136,8 +128,7 @@ func (a *API) BookFlight(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if !requestedLaunchpadFound {
-		w.WriteHeader(http.StatusBadRequest)
-		a.writeJSONResponse(w, ErrorResponse{Message: fmt.Sprintf("Requested launchpad with ID %q not found", flightBooking.LaunchpadID)})
+		a.writeBadRequest(w, ErrorResponse{Message: fmt.Sprintf("Requested launchpad with ID %q not found", flightBooking.LaunchpadID)})
 		return
 	}
 	sort.Strings(launchPadIDs)
@@ -154,7 +145,6 @@ func (a *API) BookFlight(w http.ResponseWriter, r *http.Request) {
 			launchpadToDestination[id] = currentPadDestinationID - len(destinations)
 		}
 	}
-	a.writeJSONResponse(w, launchpadToDestination)
 
 	if launchpadToDestination[flightBooking.LaunchpadID] != flightBooking.DestinationID {
 		if len(launchDateBookings) > 0 && launchDateBookings[0].DestinationID == flightBooking.DestinationID && launchDateBookings[0].LaunchpadID == flightBooking.LaunchpadID {
@@ -162,11 +152,11 @@ func (a *API) BookFlight(w http.ResponseWriter, r *http.Request) {
 		} else {
 			errResp := ErrorResponse{
 				Message: fmt.Sprintf(
-					"No launches available for destinatin %d(%s) on launchpad %s on %s",
+					"No launches available for destination %d(%s) on launchpad %s on %s",
 					flightBooking.DestinationID, destinationsMap[flightBooking.DestinationID],
 					flightBooking.LaunchpadID, flightBooking.LaunchDate,
 				)}
-			a.writeJSONResponse(w, errResp)
+			a.writeBadRequest(w, errResp)
 			return
 		}
 	}

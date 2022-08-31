@@ -49,3 +49,8 @@ func (a *API) writeResponse(w http.ResponseWriter, resp []byte) {
 		a.log.Error(err)
 	}
 }
+
+func (a *API) writeBadRequest(w http.ResponseWriter, resp ErrorResponse) {
+	w.WriteHeader(http.StatusBadRequest)
+	a.writeJSONResponse(w, resp)
+}
