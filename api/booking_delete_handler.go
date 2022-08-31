@@ -4,12 +4,14 @@ import (
 	"context"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 )
 
 func (a *API) BookingDelete(w http.ResponseWriter, r *http.Request) {
-	ctx := context.Background()
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
+	defer cancel()
 	idStr := chi.URLParam(r, "id")
 
 	id, err := strconv.Atoi(idStr)

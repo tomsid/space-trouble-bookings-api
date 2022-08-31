@@ -38,7 +38,6 @@ func (s *pgstorage) Bookings(ctx context.Context, filter BookingsFilter) ([]Book
 		}
 	}
 
-	fmt.Println(q)
 	rows, err := s.pg.Query(ctx, q)
 	if err != nil {
 		return nil, err

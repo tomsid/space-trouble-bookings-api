@@ -24,7 +24,8 @@ type Booking struct {
 }
 
 func (a *API) Bookings(w http.ResponseWriter, r *http.Request) {
-	ctx := context.Background()
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
+	defer cancel()
 
 	bookingsFilter := db.BookingsFilter{}
 	q := r.URL.Query()

@@ -24,7 +24,8 @@ type BookingRequest struct {
 }
 
 func (a *API) BookFlight(w http.ResponseWriter, r *http.Request) {
-	ctx := context.Background()
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
+	defer cancel()
 	b, err := io.ReadAll(r.Body)
 	if err != nil {
 		a.log.Error(err)
