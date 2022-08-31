@@ -9,6 +9,8 @@ type Storage interface {
 	Bookings(ctx context.Context, filter BookingsFilter) ([]Booking, error)
 	CreateBooking(ctx context.Context, booking Booking) error
 	Destinations(ctx context.Context) ([]Destination, error)
+	BookingExists(ctx context.Context, id int) (bool, error)
+	BookingDelete(ctx context.Context, id int) error
 }
 
 type Booking struct {

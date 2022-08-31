@@ -63,6 +63,7 @@ func main() {
 	r := chi.NewRouter()
 	r.Get("/booking", handlers.Bookings)
 	r.Post("/booking", handlers.BookFlight)
+	r.Delete("/booking/{id}", handlers.BookingDelete)
 
 	srv := http.Server{
 		Addr:    ":8080",

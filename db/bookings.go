@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"strconv"
+
+	"github.com/jackc/pgx/v4"
 )
 
 func (s *pgstorage) Bookings(ctx context.Context, filter BookingsFilter) ([]Booking, error) {
@@ -65,5 +67,23 @@ func (s *pgstorage) CreateBooking(ctx context.Context, b Booking) error {
 		"(first_name, last_name, gender, birthday, launchpad_id, destination_id, launch_date) VALUES "+
 		"($1, $2, $3, $4, $5, $6, $7)",
 		b.FirstName, b.LastName, b.Gender, b.Birthday, b.LaunchpadID, b.DestinationID, b.LaunchDate)
+	return err
+}
+
+func (s *pgstorage) BookingExists(ctx context.Context, id int) (bool, error) {
+	row := s.pg.QueryRow(ctx, "SELECT id FROM bookings WHERE id = $1", id)
+	var val int
+	err := row.Scan(&val)
+	if err != nil {
+		if err == pgx.ErrNoRows {
+			return false, nil
+		}
+		return false, err
+	}
+	return true, nil
+}
+
+func (s *pgstorage) BookingDelete(ctx context.Context, id int) error {
+	_, err := s.pg.Exec(ctx, "DELETE FROM bookings WHERE id = $1", id)
 	return err
 }
