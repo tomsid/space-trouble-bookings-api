@@ -45,10 +45,18 @@ func (a *API) BookFlight(w http.ResponseWriter, r *http.Request) {
 		a.writeBadRequest(w, ErrorResponse{Message: fmt.Sprintf("Invalid launch date. Should be in format YYYY-MM-DD: %s", err.Error())})
 		return
 	}
+	if launchDate.Before(time.Now()) {
+		a.writeBadRequest(w, ErrorResponse{Message: "Travels to the past are still in development. Set a launch day in future for now"})
+		return
+	}
 
 	birthday, err := time.Parse("2006-01-02", flightBooking.Birthday)
 	if err != nil {
 		a.writeBadRequest(w, ErrorResponse{Message: fmt.Sprintf("Invalid birthday date. Should be in format YYYY-MM-DD: %s", err.Error())})
+		return
+	}
+	if birthday.After(time.Now()) {
+		a.writeBadRequest(w, ErrorResponse{Message: "Can't provide flights to someone from the future. Birthday should be in the past."})
 		return
 	}
 
