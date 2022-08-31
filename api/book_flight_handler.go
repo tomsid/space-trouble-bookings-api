@@ -101,15 +101,23 @@ func (a *API) BookFlight(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			a.log.Errorf("failed to pares upcoming launch time: %s", err.Error())
 		}
-		if t.Day() == launchDate.Day() && t.Month() == launchDate.Month() && t.Year() == launchDate.Year() {
+		if sameDay(t, launchDate) {
 			w.WriteHeader(http.StatusBadRequest)
-			a.writeJSONResponse(w, ErrorResponse{Message: "SpaceX uses the launchpad on that dayÏ"})
+			a.writeJSONResponse(w, ErrorResponse{Message: "SpaceX uses the launchpad on that day"})
 			return
 		}
 	}
 
-	//TODO check if requested day on requested pad a flight with different destination is booked.
-	// can happen if the input changed (added/removed lauchpad or destination. Don't book in that case.
+	launchDateBookings, err := a.db.Bookings(ctx, db.BookingsFilter{LaunchDate: launchDate})
+	if err != nil {
+		a.log.Error(err)
+		a.internalServerError(w)
+		return
+	}
+	if len(launchDateBookings) > 0 && launchDateBookings[0].DestinationID != flightBooking.DestinationID && launchDateBookings[0].LaunchpadID != flightBooking.LaunchpadID {
+		a.writeJSONResponse(w, ErrorResponse{Message: fmt.Sprintf("On that day bookings only for destination %d are allowed", launchDateBookings[0].DestinationID)})
+		return
+	}
 
 	launchPads, err := a.spacex.GetAllLaunchpads()
 	if err != nil {
@@ -136,27 +144,31 @@ func (a *API) BookFlight(w http.ResponseWriter, r *http.Request) {
 
 	bookingDay := launchDate.YearDay()
 	pad1Destination := bookingDay%len(destinations) + 1
-	fmt.Println(pad1Destination)
 
 	launchpadToDestination := make(map[string]int, len(launchPads))
 	for i, id := range launchPadIDs {
-		currentPaddestinationID := pad1Destination + i + 1
+		currentPadDestinationID := pad1Destination + i + 1
 		if pad1Destination+i+1 <= len(destinations) {
-			launchpadToDestination[id] = currentPaddestinationID
+			launchpadToDestination[id] = currentPadDestinationID
 		} else {
-			launchpadToDestination[id] = currentPaddestinationID - len(destinations)
+			launchpadToDestination[id] = currentPadDestinationID - len(destinations)
 		}
 	}
 	a.writeJSONResponse(w, launchpadToDestination)
 
 	if launchpadToDestination[flightBooking.LaunchpadID] != flightBooking.DestinationID {
-		errResp := ErrorResponse{
-			Message: fmt.Sprintf(
-				"No launches available for destinatin %d(%s) on launchpad %s on %s",
-				flightBooking.DestinationID, destinationsMap[flightBooking.DestinationID], flightBooking.LaunchpadID, flightBooking.LaunchDate,
-			)}
-		a.writeJSONResponse(w, errResp)
-		return
+		if len(launchDateBookings) > 0 && launchDateBookings[0].DestinationID == flightBooking.DestinationID && launchDateBookings[0].LaunchpadID == flightBooking.LaunchpadID {
+			a.log.Info("According to timetable the flight shouldn't be scheduled, but scheduling anyway since on that day there are booking with that destination already")
+		} else {
+			errResp := ErrorResponse{
+				Message: fmt.Sprintf(
+					"No launches available for destinatin %d(%s) on launchpad %s on %s",
+					flightBooking.DestinationID, destinationsMap[flightBooking.DestinationID],
+					flightBooking.LaunchpadID, flightBooking.LaunchDate,
+				)}
+			a.writeJSONResponse(w, errResp)
+			return
+		}
 	}
 
 	err = a.db.CreateBooking(ctx, db.Booking{
@@ -176,4 +188,8 @@ func (a *API) BookFlight(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusCreated)
+}
+
+func sameDay(t1 time.Time, t2 time.Time) bool {
+	return t1.Day() == t2.Day() && t1.Month() == t2.Month() && t1.Year() == t2.Year()
 }

@@ -83,7 +83,7 @@ func main() {
 	l.Info("shutting down the server, waiting for in-flight connections to finish")
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
-	if err := srv.Shutdown(ctx); err != nil {
+	if err = srv.Shutdown(ctx); err != nil {
 		l.Fatal(err)
 	}
 	l.Info("server shut down")
